@@ -1,0 +1,55 @@
+#static {
+        position: absolute;
+        margin-left: 380px;
+        margin-top: 380px;
+}
+#video {
+        width: 500px;
+        height: 500px;
+}
+
+#container {
+    float: left;
+}
+#dataTable {
+        float: left;
+        width: 200px
+}
+#onside {
+        margin: auto;
+
+        float: left;
+}
+
+#content{
+    font-size:26px;
+    color:red;
+    text-align:center;
+    float: left;
+    padding-top: 50px;
+    padding-left: 50px;
+}
+
+#buttons {
+        width: 100%;
+        position: relative;
+        margin-top: 10px;
+}
+
+
+#navbutton {
+        width: 100%;
+        position: relative;
+        margin-top: 10px;
+}
+
+#all {
+        padding: 20px;
+        margin: auto;
+}
+
+#emergency {
+text-align: center; 
+font-size: 40px;
+color: red;
+}
