@@ -44,9 +44,12 @@ module.exports = function (app) {
     app.get('/getImageToInspect', (req, res)=>{
         console.log("inspecting images")
         imageMethods.getImageByExternalId(req.query.imageId, req.query.participantId).then(contestantImage=>{
-            imageMethods.getImageByExternalId(req.query.imageId, "5a2e7d8ca693cd2e06b9872f").then(trueImage =>{
+            imageMethods.getImageByExternalId(req.query.imageId, "5a2f76c3a693cd2e06b992a6").then(trueImage =>{
                 res.status(200).send({contestantImage, trueImage})
                 console.log("images sent to user")
+            }).catch(err=>{
+                console.log(err);
+                res.status(500).send("General error")
             })
         }).catch(err=>{
             console.log(err);

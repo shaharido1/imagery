@@ -16,9 +16,8 @@ function verifactions(fig1, fig2) {
     if (!checkPolygons(fig1, fig2)) {
         return false;
     }
-    //todo missing check if it's a polygon..?
 
-    if (!notAllPoints(fig1) || !notAllPoints(fig2)) {
+    if (isNotAllPoints(fig1) || isNotAllPoints(fig2)) {
         return false
     }
 
@@ -28,16 +27,14 @@ function verifactions(fig1, fig2) {
     return true
 }
 
-function notAllPoints(fig) {
-    function Validate(coord) {
-        return coord===0? true : coord? true: false
-    }
-    const check= fig.some(point => {
-        if (!point || !Validate(point.x) || !Validate(point.y)) {
+function isNotAllPoints(fig) {
+    let notAllpoints = false;
+    notAllpoints= fig.some(point => {
+        if (!point || isNaN(point.x) || isNaN(point.y)) {
             return true
         }
     });
-    return check? false : true
+    return notAllpoints
 }
 
 //check polygons has 3 vertex
@@ -598,8 +595,7 @@ function pointInside(point, polygon) {
 };
 
 function pointDistance(point1, point2) {
-    const absDistance = Math.sqrt(Math.pow(point1.x-point2.x, 2)+Math.pow(point1.y-point2.y, 2))
-    return (absDistance<config.minDistance)
+    return Math.sqrt(Math.pow(point1.x-point2.x, 2)+Math.pow(point1.y-point2.y, 2))
 }
 
 

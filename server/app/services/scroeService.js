@@ -1,5 +1,6 @@
 const interSectionMethods = require('./helpers/polygonIntersection');
 const config = require('../config/appConfig');
+//var polygonsIntersect = require('polygons-intersect');
 
 exports.ScoreService = class {
 
@@ -10,20 +11,33 @@ exports.ScoreService = class {
             noSize: 0,
             total: 0
         }
+        this.cantIntersect = [];
     }
 
     calculateImageScore(trueImage, contestantImage) {
         try {
-            this.targetsHit = [];
-            this.bestProportion = config.interSectionPrec;
-            this.error.noSize = 0;
-            contestantImage.detections.forEach(checkDetection => {
-                this.checkDetection(checkDetection, trueImage)
+            const imageClasses = this._getClasses(contestantImage);
+            if (!imageClasses) {
+                console.log("problem with image " + contestantImage.id)
+                return contestantImage
+            }
+            let sumAvg = 0;
+            imageClasses.forEach(detectionClass => {
+                const contestantImageClass = contestantImage.detections.filter(detection => {
+                    return detection.detectionClass === detectionClass
+                });
+                const trueImageClass = trueImage.detections.filter(detection => {
+                    return detection.detectionClass === detectionClass
+                });
+                if (trueImageClass && trueImageClass.length && contestantImageClass && contestantImageClass.length) {
+                    sumAvg += this._calculateForEachClass(contestantImageClass, trueImageClass)
+                }
+                else {
+                    console.log("problem with image " + contestantImage.id + "class " + detectionClass)
+                }
             });
-            contestantImage.imageScore = {
-                numberOfHit: this.targetsHit.length,
-                numberOfFalse: contestantImage.detections.length - this.targetsHit.length
-            };
+            contestantImage.imageScore = contestantImage.imageScore || {};
+            contestantImage.imageScore.precisionScore = sumAvg / imageClasses.length;
             return contestantImage
         }
         catch (e) {
@@ -33,29 +47,59 @@ exports.ScoreService = class {
     }
 
 
-    checkDetection(checkDetection, trueImage) {
+    _getClasses(contestantImage) {
+        let imageClasses = [];
+        contestantImage.detections.forEach(detection => {
+            const detectionClass = imageClasses.find(cla => cla === detection.detectionClass)
+            if (!detectionClass) {
+                imageClasses.push(detection.detectionClass)
+            }
+        })
+        return imageClasses
+    }
+
+    _calculateForEachClass(contestantImageClassDetections, trueImageClass) {
+        this.targetsHit = [];
+        this.bestProportion = config.interSectionPrec;
+        let totalP = 0;
+        let totalTrue = 0;
+        contestantImageClassDetections.forEach((checkDetection, i) => {
+            if (this._checkDetection(checkDetection, trueImageClass)) {
+                totalTrue++;
+                totalP += totalTrue / (i + 1)
+            }
+        });
+        return totalP / contestantImageClassDetections.length
+    }
+
+
+    _checkDetection(checkDetection, trueImageDetections) {
         try {
             this.bestProportion = config.interSectionPrec;
             const polygonArea = interSectionMethods.calcPolygonArea(checkDetection.position);
-            trueImage.detections.forEach(trueDetection => {
+            trueImageDetections.forEach(trueDetection => {
                 if (trueDetection.detectionClass == "utility pole") {
-                    this.checkPolygonToPoint(checkDetection, trueDetection)
+                    this._checkPolygonToPoint(checkDetection, trueDetection)
                 }
                 else {
-                    this.checkPolygonToTargets(checkDetection, polygonArea, trueDetection)
+                    this._checkPolygonToTargets(checkDetection, polygonArea, trueDetection)
                 }
             });
             if (checkDetection.hit && checkDetection.hit.isHitTarget) {
                 this.targetsHit.push(checkDetection.hit.targetId);
+                return true
             }
             else {
-                checkDetection.hit = {
-                    targetId: null,
-                    polygonSize: polygonArea,
-                    contain: 0,
-                    isHitTarget: false,
-                    isDoubleHit: false
+                if (!checkDetection.isDoubleHit) {
+                    checkDetection.hit = {
+                        targetId: null,
+                        polygonSize: polygonArea,
+                        contain: 0,
+                        isHitTarget: false,
+                        isDoubleHit: false
+                    }
                 }
+                return false
             }
         }
         catch (e) {
@@ -65,38 +109,22 @@ exports.ScoreService = class {
 
     }
 
-    createError(checkDetection, err) {
-        checkDetection.hit = {
-            targetId: null,
-            polygonSize: null,
-            contain: 0,
-            isHitTarget: false,
-            isDoubleHit: false,
-            error: err
-        };
-        switch (err) {
-            case "no size to polygon" : {
-                this.error.noSize++;
-                this.error.total++
-                break;
-            }
-        }
-    }
 
-    checkPolygonToPoint(checkDetection, trueDetection) {
-        if (interSectionMethods.pointDistance(checkDetection.position[0], trueDetection.position[0])) {
+    _checkPolygonToPoint(checkDetection, trueDetection) {
+        const absDistance = interSectionMethods.pointDistance(checkDetection.position[0], trueDetection.position[0])
+        if (absDistance < config.minDistance) {
             checkDetection.hit = {
                 isDoubleHit: false,
                 targetId: trueDetection.id,
                 isHitTarget: true,
-                polygonSize: null,
+                polygonSize: absDistance,
                 interactionPolygon: null,
                 contain: null
             };
         }
     }
 
-    checkPolygonToTargets(checkDetection, polygonArea, trueDetection) {
+    _checkPolygonToTargets(checkDetection, polygonArea, trueDetection) {
         const interSection = interSectionMethods.intersect(checkDetection.position, trueDetection.position);
         if (interSection && interSection.length) {
             const targetArea = interSectionMethods.calcPolygonArea(trueDetection.position);

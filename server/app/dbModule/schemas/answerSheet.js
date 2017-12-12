@@ -6,8 +6,7 @@ var answerSheet = mongoose.Schema({
         name: String
     },
     score: {
-        numberOfHit: Number,
-        numberOfFalse: Number
+        precisionScore: Number,
     },
     images: [String]
 });

@@ -15,8 +15,8 @@ export class DataService {
                     return resolve(res)
                 },
                 error: (err) => {
-                    console.log(err)
-                    reject (err)
+                    console.log(err);
+                    return reject (err)
                 }
             })
         })

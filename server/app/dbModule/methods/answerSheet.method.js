@@ -23,8 +23,7 @@ exports.AnswerSheetMethods = class {
                             name: answerSheet.contestantDetails.name
                         },
                         score: {
-                            numberOfHit: 0,
-                            numberOfFalse: 0
+                            precisionScore: 0,
                         },
                         images: []
                     };
@@ -111,74 +110,102 @@ exports.AnswerSheetMethods = class {
         })
     }
 
-    calculateScore(name) {
+    _getISheetNImagesFromDb(name) {
         return new Promise((resolve, reject) => {
             try {
-                if (!name) {
-                    return
-                }
                 AnswerSheet.find({$or: [{"contestantDetails.name": "true_results"}, {"contestantDetails.name": name}]}, (err, result) => {
                     if (err) {
                         console.log(err);
                         return reject(err)
                     }
                     const trueSheet = result.find(par => par.contestantDetails.name === "true_results");
+                    if (!trueSheet) {
+                        return reject("no true result to compare")
+                    }
                     let contestantSheet = result.find(par => par.contestantDetails.name === name);
                     if (!contestantSheet) {
                         return reject("no such participant")
                     }
                     let promises = [];
-                    console.log("getting images")
+                    console.log("getting images");
                     promises.push(this.imageMethods.getAllImage(trueSheet._id));
                     promises.push(this.imageMethods.getAllImage(contestantSheet._id));
                     Promise.all(promises).then(results => {
-                        console.log("got all images")
-                        const trueImages = results[0];
-                        let contestantImages = results[1];
-                        let sheetTotal = {
-                            numberOfHit: 0,
-                            numberOfFalse: 0
-                        };
-                        contestantImages.forEach(contestantImage => {
-                            try {
-                                const trueImage = trueImages.find(image => {
-                                    return image.imageId === contestantImage.imageId
-                                });
-                                console.log("checking image" + contestantImage.imageId)
-
-                                contestantImage = this.scoreService.calculateImageScore(trueImage, contestantImage);
-                            }
-                            catch (e) {
-                                console.log("problem with image " + contestantImage.imageId);
-                                console.log(e)
-                            }
-                            sheetTotal.numberOfHit += contestantImage.imageScore.numberOfHit;
-                            sheetTotal.numberOfFalse += contestantImage.imageScore.numberOfFalse;
-                        });
-                        console.log("done calculating -> saving images");
-                        this.imageMethods.saveImages(contestantImages).then(() => {
-                            contestantSheet.score = sheetTotal;
-                            contestantSheet.save().then(() => {
-                                console.log("total saved in participant");
-                                resolve(contestantSheet.score)
-                            }).catch(err => {
-                                console.log(err)
-                                return reject(err)
-                            })
-                        }).catch(err => {
-                            console.log(err)
-                            return reject(err)
+                        console.log("got all images");
+                        resolve({
+                            trueImages: results[0],
+                            contestantImages: results[1],
+                            contestantSheet: contestantSheet
                         })
-                    }).catch(err => {
-                        console.log(err);
-                        return reject(err)
                     })
                 })
             }
             catch (e) {
+                console.log(e);
                 return reject(e)
             }
         })
     }
 
-};
+    _checkImages(contestantImages, trueImages) {
+        let avgSum = 0;
+        contestantImages.forEach(contestantImage => {
+            try {
+                const trueImage = trueImages.find(image => {
+                    return image.imageId === contestantImage.imageId
+                });
+                if (trueImage) {
+                    console.log("checking image" + contestantImage.imageId);
+                    contestantImage = this.scoreService.calculateImageScore(trueImage, contestantImage);
+                    avgSum+= contestantImage.imageScore.precisionScore;
+                }
+                else {
+                    console.log("no such image" + contestantImage.imageId)
+                }
+            }
+            catch
+                (e) {
+                console.log("problem with image " + contestantImage.imageId);
+                console.log(e)
+            }
+        });
+
+        return avgSum/contestantImages.length
+    }
+
+    calculateScore(name) {
+        return new Promise((resolve, reject) => {
+            try {
+                if (!name) {
+                    return reject("no name")
+                }
+                this._getISheetNImagesFromDb(name).then(results => {
+                    const precisionScore = this._checkImages(results.contestantImages, results.trueImages);
+                    console.log("done calculating -> saving images");
+                    this.imageMethods.saveImages(results.contestantImages)
+                        .then(() => {
+                            results.contestantSheet.score.precisionבכגScore = precisionScore;
+                            results.contestantSheet.save()
+                                .then(() => {
+                                    console.log("total saved in participant");
+                                    resolve(results.contestantSheet.score)
+                                })
+                                .catch(err => {
+                                    console.log(err);
+                                    return reject(err)
+                                })
+                        })
+                        .catch(err => {
+                            console.log(err);
+                            return reject(err)
+                        })
+                })
+            }
+            catch (e) {
+                console.log(e)
+                return reject(e)
+            }
+        })
+    }
+}
+

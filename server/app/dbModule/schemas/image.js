@@ -5,8 +5,7 @@ var image = mongoose.Schema({
     imageId: String,
     participantId: String,
     imageScore: {
-        numberOfHit: Number,
-        numberOfFalse: Number
+        precisionScore: Number,
     },
     detections: [{
         detectionClass: String,
