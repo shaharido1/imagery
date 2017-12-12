@@ -3,9 +3,9 @@ var webpack = require('webpack');
 var path = require('path')
 module.exports = {
   devtool: debug ? "inline-sourcemap" : null,
-  entry: path.join(__dirname + "./../client/client.js"),
+  entry: path.join(__dirname + "./../client/home/client.js"),
   output: {
-    path: path.join(__dirname + "./../client"),
+    path: path.join(__dirname + "./../client/script"),
     filename: "scripts.min.js"
   },
   plugins: debug ? [] : [

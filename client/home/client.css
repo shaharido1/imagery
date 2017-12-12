@@ -1,0 +1,42 @@
+
+.err{
+    color: red;
+}
+
+.imageryTitle {
+    font-size: 30px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: center;
+}
+
+.subTitle {
+    font-size: 20px;
+    margin-bottom:5px;
+}
+.containerOfAll {
+    display: flex;
+    justify-content: center;
+}
+
+#fileInput1 {
+    font-size:16px;
+}
+.field {
+    font-size:16px;
+    margin-bottom: 10px;
+    margin-top:10px;
+}
+
+.participantForm {
+    padding: 10px;
+}
+
+.fileInput{
+    margin-top: 10px;
+    font-size: 16px;
+}
+
+.section {
+    margin-right: 20px;
+}

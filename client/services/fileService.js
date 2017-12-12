@@ -1,16 +1,31 @@
 const csv = require('csvtojson');
-import {features} from './features';
+import {features} from '../hardCodedData/features';
 
 const $ = require('jquery');
+const papa = require('papaparse');
 
 
-export class ProcessFile {
+export class FileService {
+    createAnswerSheet(file) {
+        return new Promise((resolve, reject) => {
+            papa.parse(file, {
+                header: true,
+                complete(results) {
+                    return resolve(FileService.parseData(results.data))
+                },
+                error(err){
+                    console.log(err)
+                    return reject(err)
+                }
+            })
+        })
+    };
 
     static parseData(detections) {
         let sheet = [];
         detections.forEach(detection => {
-            const detectionFeatures = ProcessFile.getDetectionFeatures(features, detection);
-            const index = ProcessFile.findOrPush(sheet, detection);
+            const detectionFeatures = FileService.getDetectionFeatures(features, detection);
+            const index = FileService.findOrPush(sheet, detection);
             sheet[index].detections.push({
                 detectionClass: detection.Class,
                 subClass: detection.SubClass,
@@ -32,7 +47,9 @@ export class ProcessFile {
     static getDetectionFeatures(features, detection) {
         let detectionFeatures = {};
         features.forEach(feature => {
-            detectionFeatures[feature] = detection[feature] && detection[feature] === "1";
+            if (detection[feature] && detection[feature] === "1")  {
+                detectionFeatures[feature] = true
+            }
         });
         return detectionFeatures
     }

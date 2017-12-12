@@ -1,0 +1,63 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <title>imagery</title>
+    <link rel="stylesheet" href="client/home/client.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
+          integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u"
+          crossorigin="anonymous">
+</head>
+
+<body>
+<div class="imageryTitle">imagery</div>
+<div class="containerOfAll">
+    <div class="formAndTitle section">
+        <div class="subTitle">Participant details:</div>
+        <div class="participantForm">
+            <div class="field">name:</div>
+            <input name="participantName" id="participantName" type="text">
+            <div class="err" id="participantNameWarning">Please fill your name</div>
+            <div class="field"> Upload file:
+                <input class="fileInput" name="file1" id="fileInput1" type="file">
+                <div class="err" id="uploadFileWarning">Please upload file</div>
+            </div>
+            <div>
+                <button id="submitButton">Submit</button>
+                <div class="err" id="submitError">Submit error</div>
+                <div class="success" id="submitSuccess"></div>
+            </div>
+        </div>
+    </div>
+    <div class="section">
+        <div class="subTitle">Participant score:</div>
+        <div class="participantForm">
+            <button id="calculateScore">Calculate score</button>
+            <div class="err" id="getScoreError">Please fill your name</div>
+            <div class="err" id="getScoreSendToServer"></div>
+            <div>results:</div>
+            <div id="fileResult"></div>
+        </div>
+    </div>
+    <div class="section">
+        <div class="subTitle">inspect Image</div>
+        <div class="participantForm">
+            <input id="imageId" placeholder="image external id">
+            <input id="participantId" placeholder="participant internal id">
+            <button id="inspectImage">Inspect Image</button>
+        </div>
+    </div>
+    <div class="section">
+        <div class="subTitle">get all participants</div>
+        <button id="getAllPartcipants">inspectImage</button>
+        <div id="allParticipantList"></div>
+    </div>
+</div>
+<div style="height: 10000px; width:10000px;">
+    <svg style="height: 10000px; width:10000px;" class="base"></svg>
+</div>
+<script src="client/script/scripts.min.js"></script>
+</body>
+
+</html>
