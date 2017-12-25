@@ -10,13 +10,14 @@ var image = mongoose.Schema({
     detections: [{
         detectionClass: String,
         subClass: String,
-        features: Object,
+        features: [string],
         position: [{x: Number, y: Number}],
         color: String,
         id: String,
         hit: {
             targetId: String,
             polygonSize: Number,
+            featureEvl: [{featureName: String, kapaScore: number}],
             contain: Number,
             interactionPolygon: [[{x: Number, y: Number}]],
             isDoubleHit: Boolean,

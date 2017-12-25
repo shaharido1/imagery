@@ -4,7 +4,8 @@ function intersect(fig1, fig2) {
     if (!verifactions(fig1, fig2)) {
         return false;
     }
-    var [edges, points] = edgify(fig1, fig2);
+    var [e
+      dges, points] = edgify(fig1, fig2);
     var polygons = polygonate(edges, points);
     if (!polygons){return false}
     var filteredPolygons = filterPolygons(polygons, fig1, fig2, "intersect");

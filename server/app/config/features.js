@@ -1,16 +1,33 @@
-module.exports = [
-    "Sunroof",
-    "Taxi",
-    "Luggage_Carrier",
-    "Open_cargo_area",
-    "Enclosed_cab",
-    "Spare_wheel",
-    "Wrecked",
-    "Flatbed",
-    "Ladder",
-    "Enclosed_box",
-    "Soft_shell_box",
-    "Harnessed_to_a_cart",
-    "Vents",
-    "Air_conditioner"
-]
+module.exports = {
+  smallVehicle:
+    {
+      features: [
+        'Sunroof', 'Taxi', 'Luggage', 'Carrier', 'Open cargo area', 'enclosed cab', 'Wrecked', 'Spare wheel'
+      ],
+      subClass: [
+        'Sedan', 'Hatchback', 'Minivan', 'Van', 'Pickup truck', 'Jeep', 'Public vehicle'
+      ],
+      colors: [
+        'Yellow', 'Red', 'Blue', 'Black', 'Silver', 'White'
+      ]
+    },
+  largeVehicle: {
+    features: [
+      'Open cargo area', 'Vents', 'Air conditioner', 'Wrecked', 'Enclosed box',
+      'Enclosed cab', 'Ladder', 'Flatbed', 'Soft shell box', 'Harnessed to a cart'
+    ],
+    subClass: [
+      'Truck', 'Light Truck', 'Concrete mixer truck', 'Dedicated agricultural vehicle',
+      'Crane truck', 'Prime mover', 'Tanker', 'Bus', 'Minibus'
+    ],
+    colors: [
+      'Yellow', 'Red', 'Blue', 'Black', 'Silver', 'White'
+    ]
+  },
+  fullFeatureList: [
+    'Open cargo area', 'Vents', 'Air conditioner', 'Wrecked', 'Enclosed box',
+    'Enclosed cab', 'Ladder', 'Flatbed', 'Soft shell box', 'Harnessed to a cart', 'Sunroof',
+    'Taxi', 'Luggage', 'Carrier', 'Spare wheel'
+  ]
+
+};

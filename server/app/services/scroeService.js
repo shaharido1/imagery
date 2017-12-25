@@ -1,5 +1,7 @@
 const interSectionMethods = require('./helpers/polygonIntersection');
 const config = require('../config/appConfig');
+const QualityHelper = require("./helpers/kapaCalc").QualityHelper;
+
 //var polygonsIntersect = require('polygons-intersect');
 
 exports.ScoreService = class {
@@ -11,17 +13,18 @@ exports.ScoreService = class {
             noSize: 0,
             total: 0
         }
-        this.cantIntersect = [];
     }
 
     calculateImageScore(trueImage, contestantImage) {
         try {
             const imageClasses = this._getClasses(contestantImage);
             if (!imageClasses) {
-                console.log("problem with image " + contestantImage.id)
+                console.log("problem with image " + contestantImage.id);
                 return contestantImage
             }
-            let sumAvg = 0;
+            let precisionAvg = 0;
+            let qualityAvg = 0;
+            
             imageClasses.forEach(detectionClass => {
                 const contestantImageClass = contestantImage.detections.filter(detection => {
                     return detection.detectionClass === detectionClass
@@ -30,14 +33,19 @@ exports.ScoreService = class {
                     return detection.detectionClass === detectionClass
                 });
                 if (trueImageClass && trueImageClass.length && contestantImageClass && contestantImageClass.length) {
-                    sumAvg += this._calculateForEachClass(contestantImageClass, trueImageClass)
+                    let precision;
+                    let quality;
+                    [precision, quality] =this._calculateForEachClass(contestantImageClass, trueImageClass, detectionClass);
+                    precisionAvg+=precision;
+                    qualityAvg+=quality;
+
                 }
                 else {
                     console.log("problem with image " + contestantImage.id + "class " + detectionClass)
                 }
             });
             contestantImage.imageScore = contestantImage.imageScore || {};
-            contestantImage.imageScore.precisionScore = sumAvg / imageClasses.length;
+            contestantImage.imageScore.precisionScore = precisionAvg / imageClasses.length;
             return contestantImage
         }
         catch (e) {
@@ -54,22 +62,27 @@ exports.ScoreService = class {
             if (!detectionClass) {
                 imageClasses.push(detection.detectionClass)
             }
-        })
+        });
         return imageClasses
     }
 
-    _calculateForEachClass(contestantImageClassDetections, trueImageClass) {
+    _calculateForEachClass(contestantImageClassDetections, trueImageClass, detectionClass) {
         this.targetsHit = [];
         this.bestProportion = config.interSectionPrec;
         let totalP = 0;
         let totalTrue = 0;
+        this.qualityHelper= new QualityHelper(detectionClass);
         contestantImageClassDetections.forEach((checkDetection, i) => {
-            if (this._checkDetection(checkDetection, trueImageClass)) {
+            const trueDetection = this._checkDetection(checkDetection, trueImageClass);
+            if (trueDetection) {
                 totalTrue++;
-                totalP += totalTrue / (i + 1)
+                totalP += totalTrue / (i + 1);
+                this.qualityHelper.aggregateScoreFromFeatures(checkDetection, trueDetection);
             }
         });
-        return totalP / contestantImageClassDetections.length
+        const qualityScore = this.qualityHelper.getQualityScore();
+        const precisionScore = totalP / trueImageClass.detections.length;
+        return [qualityScore, precisionScore]
     }
 
 
@@ -87,7 +100,7 @@ exports.ScoreService = class {
             });
             if (checkDetection.hit && checkDetection.hit.isHitTarget) {
                 this.targetsHit.push(checkDetection.hit.targetId);
-                return true
+                return trueImageDetections.find(detection=>{return detection.id===checkDetection.hit.targetId})
             }
             else {
                 if (!checkDetection.isDoubleHit) {
@@ -99,7 +112,7 @@ exports.ScoreService = class {
                         isDoubleHit: false
                     }
                 }
-                return false
+                return null
             }
         }
         catch (e) {
@@ -119,7 +132,8 @@ exports.ScoreService = class {
                 isHitTarget: true,
                 polygonSize: absDistance,
                 interactionPolygon: null,
-                contain: null
+                contain: null,
+                featureEvl: [],
             };
         }
     }
@@ -142,7 +156,9 @@ exports.ScoreService = class {
                         isHitTarget: false,
                         interactionPolygon: interSection,
                         polygonSize: polygonArea,
-                        contain: proportion
+                        contain: proportion,
+                        featureEvl: []
+                        
                     }
                 }
                 else {
