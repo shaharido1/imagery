@@ -1,6 +1,5 @@
 const interSectionMethods = require('./helpers/polygonIntersection');
 const config = require('../config/appConfig');
-const QualityHelper = require("./helpers/kapaCalc").QualityHelper;
 
 //var polygonsIntersect = require('polygons-intersect');
 
@@ -45,6 +44,7 @@ exports.ScoreService = class {
                 }
             });
             contestantImage.imageScore = contestantImage.imageScore || {};
+            contestantImage.imageScore.qualityScore = qualityAvg/imageClasses.length;
             contestantImage.imageScore.precisionScore = precisionAvg / imageClasses.length;
             return contestantImage
         }
@@ -71,17 +71,14 @@ exports.ScoreService = class {
         this.bestProportion = config.interSectionPrec;
         let totalP = 0;
         let totalTrue = 0;
-        this.qualityHelper= new QualityHelper(detectionClass);
         contestantImageClassDetections.forEach((checkDetection, i) => {
             const trueDetection = this._checkDetection(checkDetection, trueImageClass);
             if (trueDetection) {
                 totalTrue++;
                 totalP += totalTrue / (i + 1);
-                this.qualityHelper.aggregateScoreFromFeatures(checkDetection, trueDetection);
             }
         });
-        const qualityScore = this.qualityHelper.getQualityScore();
-        const precisionScore = totalP / trueImageClass.detections.length;
+        const precisionScore = totalP / trueImageClass.length;
         return [qualityScore, precisionScore]
     }
 
@@ -146,7 +143,7 @@ exports.ScoreService = class {
             interSection.forEach(section => {
                 totalIntersectionArea += interSectionMethods.calcPolygonArea(section);
             });
-            const unity = polygonArea + targetArea;
+            const unity = polygonArea + targetArea - totalIntersectionArea;
             const proportion = totalIntersectionArea / unity;
             if (proportion > config.interSectionPrec) {
                 if (this.targetsHit.find(targetId => targetId === trueDetection.id)) {
@@ -165,7 +162,12 @@ exports.ScoreService = class {
                     if (proportion > this.bestProportion) {
                         checkDetection.hit = {
                             isDoubleHit: false,
-                            targetId: trueDetection.id,
+                            matchTarget : {
+                                targetId : trueDetection.id,
+                                detectionClass: trueDetection.detectionClass,
+                                subClass: trueDetection.subClass,
+                                color: trueDetection.color,
+                            }
                             isHitTarget: true,
                             polygonSize: polygonArea,
                             interactionPolygon: interSection,

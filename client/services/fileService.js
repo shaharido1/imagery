@@ -13,7 +13,7 @@ export class FileService {
                 complete(results) {
                     return resolve(FileService.parseData(results.data))
                 },
-                error(err){
+                error(err) {
                     console.log(err)
                     return reject(err)
                 }
@@ -24,31 +24,34 @@ export class FileService {
     static parseData(detections) {
         let sheet = [];
         detections.forEach(detection => {
-            const detectionFeatures = FileService.getDetectionFeatures(features, detection);
             const index = FileService.findOrPush(sheet, detection);
-            sheet[index].detections.push({
-                detectionClass: detection.Class,
-                subClass: detection.SubClass,
-                position: [
-                    {x: detection.P1_X, y: detection.P1_Y},
-                    {x: detection.P2_X, y: detection.P2_Y},
-                    {x: detection.P3_X, y: detection.P3_Y},
-                    {x: detection.P4_X, y: detection.P4_Y}
-                ],
-                color: detection.Color,
-                features: detectionFeatures,
-                id: detection.Id
-
-            })
+            if (detection.Class && detection.Id) {
+                sheet[index].detections.push({
+                    detectionClass: detection.Class.toLowerCase(),
+                    subClass: detection.Subclass.toLowerCase() || "",
+                    position: [
+                        {x: detection.P1_X, y: detection.P1_Y},
+                        {x: detection.P2_X, y: detection.P2_Y},
+                        {x: detection.P3_X, y: detection.P3_Y},
+                        {x: detection.P4_X, y: detection.P4_Y}
+                    ],
+                    color: detection.Color,
+                    features: FileService.getDetectionFeatures(features, detection),
+                    id: detection.Id
+                })
+            }
+            else {
+                console.log("error with detection" + detection.Id)
+            }
         })
         return sheet
     }
 
     static getDetectionFeatures(features, detection) {
-        let detectionFeatures = {};
+        let detectionFeatures = [];
         features.forEach(feature => {
-            if (detection[feature] && detection[feature] === "1")  {
-                detectionFeatures[feature] = true
+            if (detection[feature] && detection[feature] === "1") {
+                detectionFeatures.push(feature.replace(/ /g,"_").toLowerCase())
             }
         });
         return detectionFeatures

@@ -6,18 +6,24 @@ var image = mongoose.Schema({
     participantId: String,
     imageScore: {
         precisionScore: Number,
+        qualityScore: Number
     },
     detections: [{
         detectionClass: String,
         subClass: String,
-        features: [string],
+        features: [String],
         position: [{x: Number, y: Number}],
         color: String,
         id: String,
         hit: {
-            targetId: String,
+            matchTarget: {
+                targetId : String,
+                detectionClass: String,
+                subClass: String,
+                color: String,
+            },
             polygonSize: Number,
-            featureEvl: [{featureName: String, kapaScore: number}],
+            featureEvl: [{featureName: String, kapaScore: Number}],
             contain: Number,
             interactionPolygon: [[{x: Number, y: Number}]],
             isDoubleHit: Boolean,

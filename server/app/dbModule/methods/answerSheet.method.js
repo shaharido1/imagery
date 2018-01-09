@@ -1,4 +1,5 @@
 const ScoreService = require("../../services/scroeService").ScoreService
+const QualitytService = require("../../services/qualityService").QualityService
 const FileService = require("../../services/fileService").FileService;
 const ImageMethods = require("./image").ImageMethods;
 const AnswerSheet = require('../schemas/answerSheet');
@@ -7,6 +8,7 @@ const Image = require('../schemas/image');
 exports.AnswerSheetMethods = class {
     constructor() {
         this.fileService = new FileService();
+        this.qualityService = new QualitytService();
         this.scoreService = new ScoreService();
         this.imageMethods = new ImageMethods()
     }
@@ -148,7 +150,7 @@ exports.AnswerSheetMethods = class {
     }
 
     _checkImages(contestantImages, trueImages) {
-        let avgSum = 0;
+        let precisionScoreAvg = 0;
         contestantImages.forEach(contestantImage => {
             try {
                 const trueImage = trueImages.find(image => {
@@ -157,7 +159,7 @@ exports.AnswerSheetMethods = class {
                 if (trueImage) {
                     console.log("checking image" + contestantImage.imageId);
                     contestantImage = this.scoreService.calculateImageScore(trueImage, contestantImage);
-                    avgSum+= contestantImage.imageScore.precisionScore;
+                    precisionScoreAvg+= contestantImage.imageScore.precisionScore;
                 }
                 else {
                     console.log("no such image" + contestantImage.imageId)
@@ -170,7 +172,31 @@ exports.AnswerSheetMethods = class {
             }
         });
 
-        return avgSum/contestantImages.length
+        return precisionScoreAvg/contestantImages.length
+    }
+
+    _aggragateDetectionForQuality(contestantImages){
+        let detectionForQuality = {
+            "small vehicle" : [],
+            "large vehicle" : [],
+            "solar panel": [],
+            "utility pole": []
+        };
+        contestantImages.forEach(image=>{
+            image.detections.forEach(detection=>{
+                if (detection.hit && detection.hit.isHitTarget){
+                    detectionForQuality[detection.detectionClass].push(detection)
+                }
+            })
+        })
+        return detectionForQuality
+    }
+
+    _checkQuality(contestantImages, trueImages) {
+        const detectionForQuality = this._aggragateDetectionForQuality(contestantImages)
+        const largeScore = this.qualityService.getClassScore(detectionForQuality["large vehicle"], "large vehicle");
+        const smallScore = this.qualityService.getClassScore(detectionForQuality["small vehicle"], "small vehicle");
+            this.qualityService.aggregateScoreFromFeatures(detectionClass)
     }
 
     calculateScore(name) {
@@ -180,11 +206,13 @@ exports.AnswerSheetMethods = class {
                     return reject("no name")
                 }
                 this._getISheetNImagesFromDb(name).then(results => {
-                    const precisionScore = this._checkImages(results.contestantImages, results.trueImages);
+                    const precisionScore  = this._checkImages(results.contestantImages, results.trueImages);
+                    const qualityScore = this._checkQuality(results.contestantImages, results.trueImages)
                     console.log("done calculating -> saving images");
                     this.imageMethods.saveImages(results.contestantImages)
                         .then(() => {
-                            results.contestantSheet.score.precisionבכגScore = precisionScore;
+                            results.contestantSheet.score.precisionScore = precisionScore;
+                            results.contestantSheet.score.qualityScore = qualityScore;
                             results.contestantSheet.save()
                                 .then(() => {
                                     console.log("total saved in participant");
