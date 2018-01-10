@@ -151,13 +151,13 @@ exports.AnswerSheetMethods = class {
 
     _checkImages(contestantImages, trueImages) {
         let precisionScoreAvg = 0;
-        contestantImages.forEach(contestantImage => {
+        contestantImages.forEach((contestantImage, i) => {
             try {
                 const trueImage = trueImages.find(image => {
                     return image.imageId === contestantImage.imageId
                 });
                 if (trueImage) {
-                    console.log("checking image" + contestantImage.imageId);
+                    console.log("checking image" + contestantImage.imageId + " - " + i +"/" + contestantImages.length);
                     contestantImage = this.scoreService.calculateImageScore(trueImage, contestantImage);
                     precisionScoreAvg+= contestantImage.imageScore.precisionScore;
                 }
@@ -188,15 +188,19 @@ exports.AnswerSheetMethods = class {
                     detectionForQuality[detection.detectionClass].push(detection)
                 }
             })
-        })
+        });
         return detectionForQuality
     }
 
-    _checkQuality(contestantImages, trueImages) {
+    _checkQuality(contestantImages) {
+        console.log("starting calc quality score")
         const detectionForQuality = this._aggragateDetectionForQuality(contestantImages)
         const largeScore = this.qualityService.getClassScore(detectionForQuality["large vehicle"], "large vehicle");
+        console.log("finish calc large vehicle quality score" + largeScore)
         const smallScore = this.qualityService.getClassScore(detectionForQuality["small vehicle"], "small vehicle");
-            this.qualityService.aggregateScoreFromFeatures(detectionClass)
+        console.log("finish calc small vehicle quality score" + smallScore)
+        return (largeScore*detectionForQuality["large vehicle"].length +  smallScore*detectionForQuality["small vehicle"].length) /
+            (detectionForQuality["large vehicle"].length +  detectionForQuality["small vehicle"].length)
     }
 
     calculateScore(name) {
@@ -206,8 +210,8 @@ exports.AnswerSheetMethods = class {
                     return reject("no name")
                 }
                 this._getISheetNImagesFromDb(name).then(results => {
-                    const precisionScore  = this._checkImages(results.contestantImages, results.trueImages);
-                    const qualityScore = this._checkQuality(results.contestantImages, results.trueImages)
+                    const precisionScore  = 1 || this._checkImages(results.contestantImages, results.trueImages);
+                    const qualityScore = this._checkQuality(results.contestantImages);
                     console.log("done calculating -> saving images");
                     this.imageMethods.saveImages(results.contestantImages)
                         .then(() => {

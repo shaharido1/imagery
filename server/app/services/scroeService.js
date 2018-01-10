@@ -22,8 +22,6 @@ exports.ScoreService = class {
                 return contestantImage
             }
             let precisionAvg = 0;
-            let qualityAvg = 0;
-            
             imageClasses.forEach(detectionClass => {
                 const contestantImageClass = contestantImage.detections.filter(detection => {
                     return detection.detectionClass === detectionClass
@@ -32,19 +30,14 @@ exports.ScoreService = class {
                     return detection.detectionClass === detectionClass
                 });
                 if (trueImageClass && trueImageClass.length && contestantImageClass && contestantImageClass.length) {
-                    let precision;
-                    let quality;
-                    [precision, quality] =this._calculateForEachClass(contestantImageClass, trueImageClass, detectionClass);
+                    const precision =this._calculateForEachClass(contestantImageClass, trueImageClass);
                     precisionAvg+=precision;
-                    qualityAvg+=quality;
-
                 }
                 else {
                     console.log("problem with image " + contestantImage.id + "class " + detectionClass)
                 }
             });
             contestantImage.imageScore = contestantImage.imageScore || {};
-            contestantImage.imageScore.qualityScore = qualityAvg/imageClasses.length;
             contestantImage.imageScore.precisionScore = precisionAvg / imageClasses.length;
             return contestantImage
         }
@@ -66,7 +59,7 @@ exports.ScoreService = class {
         return imageClasses
     }
 
-    _calculateForEachClass(contestantImageClassDetections, trueImageClass, detectionClass) {
+    _calculateForEachClass(contestantImageClassDetections, trueImageClass) {
         this.targetsHit = [];
         this.bestProportion = config.interSectionPrec;
         let totalP = 0;
@@ -79,7 +72,7 @@ exports.ScoreService = class {
             }
         });
         const precisionScore = totalP / trueImageClass.length;
-        return [qualityScore, precisionScore]
+        return precisionScore
     }
 
 
@@ -96,13 +89,13 @@ exports.ScoreService = class {
                 }
             });
             if (checkDetection.hit && checkDetection.hit.isHitTarget) {
-                this.targetsHit.push(checkDetection.hit.targetId);
-                return trueImageDetections.find(detection=>{return detection.id===checkDetection.hit.targetId})
+                this.targetsHit.push(checkDetection.hit.matchTarget.targetId);
+                return trueImageDetections.find(detection=>{return detection.id===checkDetection.hit.matchTarget.targetId})
             }
             else {
                 if (!checkDetection.isDoubleHit) {
                     checkDetection.hit = {
-                        targetId: null,
+                        matchTarget: null,
                         polygonSize: polygonArea,
                         contain: 0,
                         isHitTarget: false,
@@ -125,7 +118,9 @@ exports.ScoreService = class {
         if (absDistance < config.minDistance) {
             checkDetection.hit = {
                 isDoubleHit: false,
-                targetId: trueDetection.id,
+                matchTarget: {
+                    targetId: trueDetection.id
+                },
                 isHitTarget: true,
                 polygonSize: absDistance,
                 interactionPolygon: null,
@@ -149,17 +144,23 @@ exports.ScoreService = class {
                 if (this.targetsHit.find(targetId => targetId === trueDetection.id)) {
                     checkDetection.hit = {
                         isDoubleHit: true,
-                        targetId: trueDetection.id,
+                        matchTarget: {
+                            targetId : trueDetection.id,
+                            detectionClass: trueDetection.detectionClass,
+                            subClass: trueDetection.subClass,
+                            color: trueDetection.color,
+                            features:trueDetection.features
+                        },
                         isHitTarget: false,
                         interactionPolygon: interSection,
                         polygonSize: polygonArea,
                         contain: proportion,
                         featureEvl: []
-                        
                     }
                 }
                 else {
                     if (proportion > this.bestProportion) {
+                        //array need to be cloned..
                         checkDetection.hit = {
                             isDoubleHit: false,
                             matchTarget : {
@@ -167,7 +168,8 @@ exports.ScoreService = class {
                                 detectionClass: trueDetection.detectionClass,
                                 subClass: trueDetection.subClass,
                                 color: trueDetection.color,
-                            }
+                                features: JSON.parse(JSON.stringify(trueDetection.features))
+                            },
                             isHitTarget: true,
                             polygonSize: polygonArea,
                             interactionPolygon: interSection,

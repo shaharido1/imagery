@@ -6,7 +6,6 @@ var image = mongoose.Schema({
     participantId: String,
     imageScore: {
         precisionScore: Number,
-        qualityScore: Number
     },
     detections: [{
         detectionClass: String,
@@ -21,6 +20,7 @@ var image = mongoose.Schema({
                 detectionClass: String,
                 subClass: String,
                 color: String,
+                features: [String]
             },
             polygonSize: Number,
             featureEvl: [{featureName: String, kapaScore: Number}],

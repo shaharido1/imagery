@@ -51,7 +51,7 @@ export class FileService {
         let detectionFeatures = [];
         features.forEach(feature => {
             if (detection[feature] && detection[feature] === "1") {
-                detectionFeatures.push(feature.replace(/ /g,"_").toLowerCase())
+                detectionFeatures.push(feature.replace(/_/g," ").toLowerCase())
             }
         });
         return detectionFeatures
